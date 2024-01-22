@@ -4,5 +4,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     NoPathProvided,
     UnbalancedBrackets,
-    IO(std::io::Error)
+    IO(std::io::Error),
+
+    CursorOverflow,
+    CursorUnderflow,
 }

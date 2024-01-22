@@ -8,10 +8,10 @@ const SIZE: usize = 30000;
 
 #[derive(Clone, Copy, Debug)]
 enum Instruction {
-    Right,                // >
-    Left,                 // <
-    Increment,            // +
-    Decrement,            // -
+    Right(usize),         // >
+    Left(usize),          // <
+    Increment(u8),        // +
+    Decrement(u8),        // -
     Output,               // .
     Input,                // ,
     JumpIfZero(usize),    // [
@@ -19,23 +19,44 @@ enum Instruction {
 }
 
 fn parse(source: &str) -> Result<Vec<Instruction>> {
+    let chars = source.as_bytes();
+
     let mut program = Vec::new();
     let mut stack = Vec::new();
 
-    for ch in source.chars() {
+    let mut i = 0;
+    while let Some(ch) = chars.get(i) {
         match ch {
-            '>' => program.push(Instruction::Right),
-            '<' => program.push(Instruction::Left),
-            '+' => program.push(Instruction::Increment),
-            '-' => program.push(Instruction::Decrement),
-            '.' => program.push(Instruction::Output),
-            ',' => program.push(Instruction::Input),
-            '[' => {
+            b'>' | b'<' | b'+' | b'-' => {
+                let j = i;
+                while i < chars.len() && chars[i] == *ch {
+                    i += 1
+                }
+
+                let n = i - j;
+                match ch {
+                    b'>' => program.push(Instruction::Right(n)),
+                    b'<' => program.push(Instruction::Left(n)),
+                    b'+' => program.push(Instruction::Increment(n as u8)),
+                    b'-' => program.push(Instruction::Decrement(n as u8)),
+                    _ => unreachable!()
+                }
+            },
+            b'.' => {
+                program.push(Instruction::Output);
+                i += 1;
+            },
+            b',' => {
+                program.push(Instruction::Input);
+                i += 1;
+            },
+            b'[' => {
                 let index = program.len();
                 stack.push(index);
-                program.push(Instruction::JumpIfNonZero(index + 1))
-            }
-            ']' => {
+                program.push(Instruction::JumpIfNonZero(index + 1));
+                i += 1;
+            },
+            b']' => {
                 let jump_if_non_zero = stack.pop().ok_or(Error::UnbalancedBrackets)?;
                 let jump_if_zero = program.len();
 
@@ -44,8 +65,9 @@ fn parse(source: &str) -> Result<Vec<Instruction>> {
                     Some(Instruction::JumpIfNonZero(_)) => program.swap(jump_if_non_zero, jump_if_zero),
                     _ => panic!("Invalid index on bracket stack")
                 }
+                i += 1;
             },
-            _ => {}
+            _ => i += 1
         }
     }
 
@@ -65,26 +87,26 @@ fn interpret(program: &[Instruction]) -> Result<()> {
     let mut ip = 0;
     while let Some(instruction) = program.get(ip) {
         match instruction {
-            Instruction::Right => {
-                cursor += 1;
+            Instruction::Right(n) => {
+                cursor += n;
                 if cursor >= SIZE {
-                    cursor = 0;
+                    return Err(Error::CursorOverflow);
                 }
                 ip += 1;
             },
-            Instruction::Left => {
-                if cursor == 0 {
-                    cursor = SIZE;
+            Instruction::Left(n) => {
+                if cursor < *n {
+                    return Err(Error::CursorUnderflow);
                 }
-                cursor -= 1;
+                cursor -= n;
                 ip += 1;
             },
-            Instruction::Increment => {
-                memory[cursor] = memory[cursor].wrapping_add(1);
+            Instruction::Increment(n) => {
+                memory[cursor] = memory[cursor].wrapping_add(*n);
                 ip += 1;
             },
-            Instruction::Decrement => {
-                memory[cursor] = memory[cursor].wrapping_sub(1);
+            Instruction::Decrement(n) => {
+                memory[cursor] = memory[cursor].wrapping_sub(*n);
                 ip += 1;
             },
             Instruction::Output => {
@@ -131,7 +153,7 @@ fn main() -> Result<()> {
         println!("Invalid source code");
         err
     })?;
-    
+
     interpret(&program).map_err(|err| {
         println!("Runtime error");
         err
