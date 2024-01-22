@@ -1,6 +1,6 @@
 mod error;
 
-use std::{fs, env, io::{self, Read}};
+use std::{env, fs, io::{self, Read}};
 
 use error::{Error, Result};
 
@@ -90,13 +90,13 @@ fn interpret(program: &[Instruction]) -> Result<()> {
             Instruction::Right(n) => {
                 cursor += n;
                 if cursor >= SIZE {
-                    return Err(Error::CursorOverflow);
+                    return Err(Error::Generic("Cursor overflow".to_string()));
                 }
                 ip += 1;
             },
             Instruction::Left(n) => {
                 if cursor < *n {
-                    return Err(Error::CursorUnderflow);
+                    return Err(Error::Generic("Cursor underflow".to_string()));
                 }
                 cursor -= n;
                 ip += 1;
