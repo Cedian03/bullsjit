@@ -1,1 +1,1 @@
-# Bullsjit interperter for Brainfuck
+# Bullsjit JIT-compiler for Brainfuck
