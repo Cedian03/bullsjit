@@ -258,11 +258,19 @@ fn compile_and_run(program: &[Instruction]) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let mut args = env::args().skip(1);
+    let mut args = env::args().skip(1).peekable();
+
+    let use_interpreter = match args.peek() {
+        Some(x) if x.as_str() == "-i" => {
+            args.next();
+            true
+        },
+        _ => false,
+    };
 
     let path = args.next().ok_or_else(|| {
-        println!("Usage: bullsjit [--interpret] <source.bf>");
-        Error::NoPathProvided
+        println!("Usage: bullsjit [-i] <source>");
+        Error::NoPathProvided        
     })?;
 
     let source = fs::read_to_string(path).map_err(|err| {
@@ -275,17 +283,15 @@ fn main() -> Result<()> {
         err
     })?;
 
-    if true {
+    if !use_interpreter {
         compile_and_run(&program).map_err(|err| {
             println!("JIT compiler ran into an error");
             err
-        })?;
+        })
     } else {
         interpret(&program).map_err(|err| {
             println!("Interpreter ran into an error");
             err
-        })?;
-    };
-
-    Ok(())
+        })
+    }
 }
