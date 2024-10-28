@@ -86,7 +86,7 @@ fn parse(source: &str) -> Result<Vec<Instruction>> {
 }
 
 fn main() -> Result<()> {
-    let args = dbg!(Args::parse());
+    let args = Args::parse();
 
     let source = fs::read_to_string(args.source).map_err(|err| {
         eprintln!("Provided file path doesn't exist");
