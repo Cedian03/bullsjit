@@ -1,4 +1,4 @@
-use std::io::{self, Read};
+use std::{io::{self, Read}, num::Wrapping};
 
 use crate::common::*;
 use crate::error::{Error, Result};
@@ -6,7 +6,7 @@ use crate::error::{Error, Result};
 pub fn interpret(program: &[Instruction]) -> Result<()> {
     let mut stdin = io::stdin().bytes();
 
-    let mut cells = [0u8; NO_CELLS];
+    let mut cells = [Wrapping(0u8); NO_CELLS];
     let mut cursor = 0;
 
     let mut ip = 0;
@@ -27,30 +27,30 @@ pub fn interpret(program: &[Instruction]) -> Result<()> {
                 ip += 1;
             }
             Instruction::Increment(n) => {
-                cells[cursor] = cells[cursor].wrapping_add(*n);
+                cells[cursor] += n;
                 ip += 1;
             }
             Instruction::Decrement(n) => {
-                cells[cursor] = cells[cursor].wrapping_sub(*n);
+                cells[cursor] -= n;
                 ip += 1;
             }
             Instruction::Output => {
-                print!("{}", cells[cursor] as char);
+                print!("{}", char::from(cells[cursor].0));
                 ip += 1;
             }
             Instruction::Input => {
-                cells[cursor] = stdin.next().unwrap().map_err(|err| Error::IO(err))?;
+                cells[cursor] = Wrapping(stdin.next().unwrap().map_err(|err| Error::IO(err))?);
                 ip += 1;
             }
             Instruction::JumpIfZero(destination) => {
-                if cells[cursor] == 0 {
+                if cells[cursor].0 == 0 {
                     ip = *destination;
                 } else {
                     ip += 1;
                 }
             }
             Instruction::JumpIfNonZero(destination) => {
-                if cells[cursor] != 0 {
+                if cells[cursor].0 != 0 {
                     ip = *destination;
                 } else {
                     ip += 1;
